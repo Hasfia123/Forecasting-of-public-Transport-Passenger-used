@@ -1,0 +1,221 @@
+1st notebook: public transport insights
+Dataset Overview:
+    The dataset represents the daily passenger traffic across different public transport service types,
+    recorded over a specific period of time. It consists of seven columns capturing various facts, 
+    including local and rapid route the people using the transport, peak hour crowding, and passengers categorized as school. 
+    Each row providing a detailed snapshot of daily patterns of transportation. 
+    The dataset allows for analysis of overall passenger trends, identification of high-demand routes,
+    and evaluation of peak travel times. Initial inspection reveals that the local routes consistently 
+    accommodate the highest number of passengers, while rapid routes carry fewer commuters.
+    The structured data, with clear numeric values , offers a reliable foundation for generating insights,
+    comparisons, and potential forecasting of passenger flows in the public transport system.
+Data Cleaning :
+    First I have retrieved the data and check for missng values and taken statiscal information of shape and dimension
+    to retrieve the data i used pandas library
+import pandas as pd
+data = pd.read_csv('C:\\Users\\Dell\\Downloads\\Daily_Public_Transport_Passenger_Journeys_by_Service_Type_20250603.csv')
+data.head()
+data.isnull().sum()
+data.shape
+data.describe()
+Then I have used the seaborn and matplotlib from the libraries for EDA
+import seaborn as sns
+import matplotlib.pyplot as plt
+plt.figure(figsize=(10,5))
+sns.histplot(data['Local Route'], kde=True, bins=20, color='orange')
+plt.title('Distribution of Daily Passengers - Local Route')
+plt.xlabel('Number of Passengers')
+plt.ylabel('Frequency')
+plt.show()
+plt.figure(figsize=(10,5))
+sns.histplot(data['Rapid Route'], kde=True, bins=20, color='skyblue')
+plt.title('Distribution of Daily Passengers - Rapid Route')
+plt.xlabel('Number of Passengers')
+plt.ylabel('Frequency')
+plt.show()
+plt.figure(figsize=(10,5))
+sns.histplot(data['Rapid Route'], kde=True, bins=20, color='skyblue')
+plt.title('Distribution of Daily Passengers - Rapid Route')
+plt.xlabel('Number of Passengers')
+plt.ylabel('Frequency')
+plt.show()
+Insight 1 :
+    The histogram analysis shows that local routes consistently carry a higher number of passengers compared to rapid routes.
+    Rapid routes display a more moderate and steady passenger flow, indicating they serve a smaller,
+    consistent segment of commuters. This pattern highlights that most daily travelers rely on local routes for
+    convenience and accessibility,
+    while rapid routes cater to those prioritizing speed over coverage.
+sns.histplot(data['Peak Service'], bins=10, kde=True)
+plt.title('Distribution of Passengers During Peak Hours')
+plt.xlabel('Number of Passengers')
+plt.show()
+Insight 2 :
+    The histogram of peak service passengers shows that a large portion of commuters travel during peak hours,
+    with most daily counts clustering around the mid to high range. 
+    This indicates a clear concentration of passenger activityduring these times, 
+    reflecting the typical rush periods when people are commuting to work or school.
+plt.figure(figsize=(12,5))
+plt.plot(data['Date'], data['Total'], marker='o')
+plt.xticks(rotation=45)
+plt.title('Total Daily Passengers Over Time')
+plt.ylabel('Number of Passengers')
+plt.axhline(data['Total'].mean(), color='red', linestyle='--', label='Average')
+plt.legend()
+plt.show()
+Insight 3 :
+    Looking at total daily passengers over time, weekdays consistently show higher ridership, 
+    while weekends experience lighter traffic. Notably, certain days exhibit sharp peaks,
+    suggesting events or higher workday commuting. This variation highlights the dynamic nature of public transport demand
+    and underscores the need for flexible resource planning.
+plt.figure(figsize=(12,5))
+plt.plot(data['Date'], data['Local Route'], label='Local Route', color='orange')
+plt.plot(data['Date'], data['Rapid Route'], label='Rapid Route', color='skyblue')
+plt.plot(data['Date'], data['Light Rail'], label='Light Rail', color='green')
+plt.xticks(rotation=45)
+plt.title('Daily Passenger Trends: Local, Rapid, and Light Rail')
+plt.ylabel('Number of Passengers')
+plt.legend()
+plt.show()
+Insight 4 :
+Comparing Local, Rapid, and Light Rail services,
+it is evident that local routes dominate daily passenger numbers, while rapid routes maintain a smaller,
+steady flow. Light Rail shows a moderate, consistent usage, bridging the gap between local and rapid services.
+This pattern suggests that Light Rail serves commuters who prefer a balance between speed and accessibility,
+making it an important but less crowded alternative to local routes.
+plt.plot(data['Date'], data['Local Route'], label='Local Route')
+plt.plot(data['Date'], data['Rapid Route'], label='Rapid Route')
+plt.legend()
+plt.xticks(rotation=45)
+plt.title('Local vs Rapid Route Daily Trend')
+plt.show()
+Insight 5 :
+The daily trend plot highlights that local routes consistently carry more passengers than rapid routes, 
+with noticeable day-to-day fluctuations. 
+While rapid routes maintain a relatively steady flow, local routes show higher peaks,
+reflecting their critical role in meeting the commuting needs of the majority of daily travelers.
+service_totals = data[['Local Route','Rapid Route','Peak Service','School','Other','Light Rail']].sum()
+plt.figure(figsize=(8,8))
+plt.pie(service_totals, labels=service_totals.index, autopct='%1.1f%%', startangle=140, colors=['orange','skyblue','red','green','purple','lightgreen'])
+plt.title('Passenger Distribution by Service Type')
+plt.show()
+2nd notebook: Forecasting
+Dataset Preparation:
+    The first step involved loading the dataset and converting the date column into a datetime format. 
+This allowed us to set the date as the index and ensure that all time-based operations, such as plotting and forecasting,
+are aligned correctly. Only the relevant service type columns were selected for forecasting.
+import pandas as pd
+import matplotlib.pyplot as plt
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+data = pd.read_csv('C:\\Users\\Dell\\Downloads\\Daily_Public_Transport_Passenger_Journeys_by_Service_Type_20250603.csv')
+Choosing the Forecasting Model:
+        For forecasting, we selected the SARIMA model,
+        which is suitable for time series data with both trend and seasonality.
+        The weekly pattern in passenger counts, especially for school and peak hour traffic,
+        justified the inclusion of a seasonal component. 
+        SARIMA allows capturing these recurring patterns while also accounting for overall trends in the data.
+def sarima_forecast(series, steps=7):
+    model = SARIMAX(series, order=(1,1,1), seasonal_order=(1,1,1,7), enforce_stationarity=False, enforce_invertibility=False)
+    model_fit = model.fit(disp=False)
+    forecast = model_fit.forecast(steps=steps)
+    return forecast
+columns = ['Local Route', 'Rapid Route', 'Peak Hours', 'School', 'Other']
+forecast_results = pd.DataFrame()
+
+for col in columns:
+    series = data[col]
+    forecast = sarima_forecast(series)
+    forecast_results[col + ' Forecast'] = forecast.values
+    
+
+    plt.figure(figsize=(10,4))
+    plt.plot(series, label='Historical')
+    plt.plot(pd.date_range(series.index[-1]+pd.Timedelta(days=1), periods=7), forecast, color='red', label='7-Day Forecast')
+    plt.title(f'7-Day Forecast - {col}')
+    plt.legend()
+    plt.show()
+    We applied the SARIMA model individually to each service type: Local Route, Rapid Route, Peak Hours, School, and Other.
+    This approach ensures that unique patterns and trends in each category are properly modeled.
+    Each model was used to forecast the next 7 days, providing a short-term outlook on expected passenger counts.
+def sarima_forecast(series, steps=7):
+    model = SARIMAX(series, order=(1,1,1), seasonal_order=(1,1,1,7), enforce_stationarity=False, enforce_invertibility=False)
+    model_fit = model.fit(disp=False)
+    forecast = model_fit.forecast(steps=steps)
+    return forecast
+forecast_results = pd.DataFrame()
+
+for col in columns:
+    series = data[col]
+    forecast = sarima_forecast(series)
+    
+
+    forecast_results[col + ' Forecast'] = forecast.values
+    
+    
+    plt.figure(figsize=(10,4))
+    plt.plot(series, label='Historical')
+    plt.plot(pd.date_range(series.index[-1]+pd.Timedelta(days=1), periods=7), forecast, color='red', label='7-Day Forecast')
+    plt.title(f'7-Day Forecast - {col}')
+    plt.legend()
+    plt.show()
+For clarity, historical passenger counts were plotted alongside the 7-day forecast. 
+The plots help in comparing predicted values with historical trends and 
+make it easier to interpret peaks, troughs, and overall movement in passenger traffic for each service type.
+Finally:
+    Finally, the 7-day forecasts for all service types were consolidated into a single table and exported to CSV. 
+    This allows for further analysis, comparison, or integration into operational planning for public transport services.
+3rd Notebook: technical report
+#Technical Report: SARIMA Forecasting of Public Transport Passenger Counts
+
+ 1. Introduction
+This report focuses on forecasting daily passenger counts for various public transport service types, 
+including Local Route, Rapid Route, Peak Hours, School, and Other.
+Understanding passenger trends is crucial for efficient planning and management of public transport services.
+Accurate forecasts allow transit authorities to allocate resources effectively, optimize schedules,
+and anticipate periods of high demand, ensuring smoother operations and better service for commuters.
+
+ 2. Choice of Forecasting Model
+For this analysis, we selected the SARIMA (Seasonal AutoRegressive Integrated Moving Average) model.
+SARIMA is particularly suitable for time series data that exhibits both trends and recurring seasonal patterns.
+In public transport data, passenger counts often follow a weekly rhythm: weekdays usually see higher traffic, 
+especially during peak hours and school days, while weekends have lower and more variable counts.
+Using a model that accounts for both trend and seasonality helps produce forecasts that reflect
+these real-world patterns more accurately.
+
+The SARIMA model is built on two components: the non-seasonal ARIMA part, 
+    which includes parameters p (autoregressive order), d (differencing order to remove trends), 
+    and q (moving average order), and the seasonal component,
+    which includes parameters P (seasonal autoregressive order), 
+    D (seasonal differencing), Q (seasonal moving average), and
+    s (the seasonal period). For this dataset, we set p=1, d=1, q=1 for the non-seasonal component,
+    and P=1, D=1, Q=1, s=7 to capture weekly patterns. Additionally, 
+    `enforce_stationarity=False` and `enforce_invertibility=False` 
+    were used to give the model more flexibility and avoid fitting issues.
+
+ 3. Implementation Steps
+The forecasting process followed these steps:  
+
+1. Data Preparation:The dataset was loaded and the Date column was converted to a datetime format.
+    This allowed us to set the date as the index, which is necessary for time series analysis.  
+2. Column Selection:We focused on five key columns—Local Route, Rapid Route, Peak Hours, School, and Other—as these
+    categories capture the primary patterns in daily passenger movement.  
+3. Model Application:Each service type was modeled separately using SARIMA to ensure that unique patterns in each category
+    were captured.  
+4. Forecast Generation:Using the fitted models,
+    we forecasted passenger counts for the next seven days for all five service types.  
+5. Visualization:Historical data and forecasted values were plotted together to provide a clear visual
+    representation of expected trends and variations.
+
+ 4. Key Observations
+Local Routes:These consistently carry the highest number of passengers, highlighting their importance in daily commuting.  
+Rapid Routes:Passenger counts are lower and more stable compared to local routes,
+    suggesting these services are used by a more specific segment of commuters.  
+Peak Hours:A significant proportion of daily passengers travel during peak periods,
+    which aligns with expected workday and school commuting patterns.  
+School Passengers:These show predictable weekly patterns, reflecting school schedules and weekday trends.  
+Overall Passenger Trends:Total daily passengers fluctuate across the dataset,
+    with noticeable peaks on certain days that may correspond to special events or typical weekly variations.
+
+ 5. Conclusion
+The SARIMA model successfully captures both the trend and weekly seasonality present in public transport passenger data. 
+The resulting seven-day forecasts provide actionable insights that can help optimize scheduling, manage peak-hour congestion, and allocate resources efficiently. This approach is flexible and can be adapted for longer-term forecasts or other service types by adjusting seasonal parameters and model settings. Using this methodology, transit authorities can plan more effectively, ensuring smoother operations and improved service quality for commuters.
+
