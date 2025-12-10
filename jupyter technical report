@@ -1,0 +1,54 @@
+#Technical Report: SARIMA Forecasting of Public Transport Passenger Counts
+
+ 1. Introduction
+This report focuses on forecasting daily passenger counts for various public transport service types, 
+including Local Route, Rapid Route, Peak Hours, School, and Other.
+Understanding passenger trends is crucial for efficient planning and management of public transport services.
+Accurate forecasts allow transit authorities to allocate resources effectively, optimize schedules,
+and anticipate periods of high demand, ensuring smoother operations and better service for commuters.
+
+ 2. Choice of Forecasting Model
+For this analysis, we selected the SARIMA (Seasonal AutoRegressive Integrated Moving Average) model.
+SARIMA is particularly suitable for time series data that exhibits both trends and recurring seasonal patterns.
+In public transport data, passenger counts often follow a weekly rhythm: weekdays usually see higher traffic, 
+especially during peak hours and school days, while weekends have lower and more variable counts.
+Using a model that accounts for both trend and seasonality helps produce forecasts that reflect
+these real-world patterns more accurately.
+
+The SARIMA model is built on two components: the non-seasonal ARIMA part, 
+    which includes parameters p (autoregressive order), d (differencing order to remove trends), 
+    and q (moving average order), and the seasonal component,
+    which includes parameters P (seasonal autoregressive order), 
+    D (seasonal differencing), Q (seasonal moving average), and
+    s (the seasonal period). For this dataset, we set p=1, d=1, q=1 for the non-seasonal component,
+    and P=1, D=1, Q=1, s=7 to capture weekly patterns. Additionally, 
+    `enforce_stationarity=False` and `enforce_invertibility=False` 
+    were used to give the model more flexibility and avoid fitting issues.
+
+ 3. Implementation Steps
+The forecasting process followed these steps:  
+
+1. Data Preparation:The dataset was loaded and the Date column was converted to a datetime format.
+    This allowed us to set the date as the index, which is necessary for time series analysis.  
+2. Column Selection:We focused on five key columns—Local Route, Rapid Route, Peak Hours, School, and Other—as these
+    categories capture the primary patterns in daily passenger movement.  
+3. Model Application:Each service type was modeled separately using SARIMA to ensure that unique patterns in each category
+    were captured.  
+4. Forecast Generation:Using the fitted models,
+    we forecasted passenger counts for the next seven days for all five service types.  
+5. Visualization:Historical data and forecasted values were plotted together to provide a clear visual
+    representation of expected trends and variations.
+
+ 4. Key Observations
+Local Routes:These consistently carry the highest number of passengers, highlighting their importance in daily commuting.  
+Rapid Routes:Passenger counts are lower and more stable compared to local routes,
+    suggesting these services are used by a more specific segment of commuters.  
+Peak Hours:A significant proportion of daily passengers travel during peak periods,
+    which aligns with expected workday and school commuting patterns.  
+School Passengers:These show predictable weekly patterns, reflecting school schedules and weekday trends.  
+Overall Passenger Trends:Total daily passengers fluctuate across the dataset,
+    with noticeable peaks on certain days that may correspond to special events or typical weekly variations.
+
+ 5. Conclusion
+The SARIMA model successfully captures both the trend and weekly seasonality present in public transport passenger data. 
+The resulting seven-day forecasts provide actionable insights that can help optimize scheduling, manage peak-hour congestion, and allocate resources efficiently. This approach is flexible and can be adapted for longer-term forecasts or other service types by adjusting seasonal parameters and model settings. Using this methodology, transit authorities can plan more effectively, ensuring smoother operations and improved service quality for commuters.
